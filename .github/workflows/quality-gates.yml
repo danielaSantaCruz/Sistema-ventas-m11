@@ -17,7 +17,7 @@ jobs:
   # JOB 1: BACKEND QUALITY GATES (PHP/Laravel)
   # ==================================================================
   backend-quality:
-    name: Backend Quality (PHP)
+    name: Backend Quality Gate (PHP)
     runs-on: ubuntu-latest
 
     steps:
