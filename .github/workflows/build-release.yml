@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - feature/quality-gates-update
+      - "feature/**"
   workflow_dispatch:
     inputs:
       version:
@@ -47,15 +47,18 @@ jobs:
           else
             VERSION="1.0.0"
           fi
+
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          BRANCH_NAME=${{ github.ref_name }}
 
-          if [ "$BRANCH_NAME" == "main" ]; then
+          # LIMPIEZA DEL NOMBRE DE LA RAMA: reemplaza / por -
+          SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+
+          if [ "${{ github.ref_name }}" == "main" ]; then
             RELEASE_NAME="v${VERSION}-${TIMESTAMP}"
             PRERELEASE="false"
           else
-            RELEASE_NAME="v${VERSION}-${BRANCH_NAME}-${TIMESTAMP}"
+            RELEASE_NAME="v${VERSION}-${SAFE_BRANCH_NAME}-${TIMESTAMP}"
             PRERELEASE="true"
           fi
 
@@ -88,7 +91,6 @@ jobs:
       - name: Install PHP Dependencies (Production)
         run: |
           composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-          echo "Composer dependencies installed (production mode)"
 
       # Setup Node.js
       - name: Setup Node.js ${{ env.NODE_VERSION }}
@@ -99,15 +101,11 @@ jobs:
 
       # Install Node dependencies
       - name: Install Node Dependencies
-        run: |
-          npm ci
-          echo "NPM dependencies installed"
+        run: npm ci
 
       # Build frontend
       - name: Build Frontend (Vite)
-        run: |
-          npm run build
-          echo "Frontend assets built"
+        run: npm run build
 
       # Create .env for artisan commands
       - name: Setup Environment for Optimization
@@ -121,7 +119,6 @@ jobs:
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
-          echo "Laravel optimized"
 
       # Create version file
       - name: Create Version File
@@ -133,15 +130,12 @@ jobs:
             "branch": "${{ github.ref_name }}",
             "built_at": "'$(date -Iseconds)'"
           }' > public/version.json
-          echo "Version file created"
 
       # Create release artifact
       - name: Create Release Artifact
         run: |
           ARTIFACT_NAME="sistema-ventas-${{ steps.version.outputs.release_name }}"
 
-          # Create tar.gz excluding unnecessary files
-          # Create tar.gz excluding unnecessary files
           tar -czf "${ARTIFACT_NAME}.tar.gz" \
             --exclude='node_modules' \
             --exclude='.git' \
@@ -162,14 +156,10 @@ jobs:
             --exclude='vitest.config.js' \
             --exclude='eslint.config.js' \
             --exclude='.claude' \
-            . || [[ $? -eq 1 ]]
+            .
 
-          # Generate checksum
           sha256sum "${ARTIFACT_NAME}.tar.gz" > "${ARTIFACT_NAME}.tar.gz.sha256"
-
           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_ENV
-          echo "Artifact created: ${ARTIFACT_NAME}.tar.gz"
-          ls -lh "${ARTIFACT_NAME}.tar.gz"
 
       # Upload artifact
       - name: Upload Build Artifact
@@ -200,12 +190,8 @@ jobs:
       - name: Build Summary
         run: |
           echo "## Build & Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| **Release** | \`${{ steps.version.outputs.release_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Branch** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Artifact** | \`${{ env.artifact_name }}.tar.gz\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Release created successfully!" >> $GITHUB_STEP_SUMMARY
