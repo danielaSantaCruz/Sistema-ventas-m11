@@ -131,12 +131,13 @@ jobs:
             "built_at": "'$(date -Iseconds)'"
           }' > public/version.json
 
-      # Create release artifact
+      # Create release artifact (CORREGIDO PARA EVITAR "file changed as we read it")
       - name: Create Release Artifact
         run: |
           ARTIFACT_NAME="sistema-ventas-${{ steps.version.outputs.release_name }}"
 
-          tar -czf "${ARTIFACT_NAME}.tar.gz" \
+          # Creamos el archivo en /tmp para que tar no se muerda la cola
+          tar -czf "/tmp/${ARTIFACT_NAME}.tar.gz" \
             --exclude='node_modules' \
             --exclude='.git' \
             --exclude='.env' \
@@ -158,8 +159,14 @@ jobs:
             --exclude='.claude' \
             .
 
+          # Lo movemos de vuelta al workspace
+          mv "/tmp/${ARTIFACT_NAME}.tar.gz" .
+
+          # Generamos el checksum
           sha256sum "${ARTIFACT_NAME}.tar.gz" > "${ARTIFACT_NAME}.tar.gz.sha256"
+
           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_ENV
+          echo "Artifact created: ${ARTIFACT_NAME}.tar.gz"
 
       # Upload artifact
       - name: Upload Build Artifact
