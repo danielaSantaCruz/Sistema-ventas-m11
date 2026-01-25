@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - ci-dia4
+      - feature/quality-gates-update
   workflow_dispatch:
     inputs:
       version:
