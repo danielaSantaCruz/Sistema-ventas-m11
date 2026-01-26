@@ -2,9 +2,9 @@ name: Quality Gates
 
 on:
   push:
-    branches: ["main", "feature/**", "ci-**"]
+    branches: ["main", "develop", "feature/**", "ci-**"]
   pull_request:
-    branches: ["main"]
+    branches: ["main, develop"]
   workflow_dispatch:
 
 concurrency:
