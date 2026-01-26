@@ -1,24 +1,31 @@
-# Descripción del Cambio
+# Descripción del Cambio 📝
 
-<!-- ¿Qué hace este PR? ¿Qué problema resuelve? -->
+<!--
+Breve resumen de qué hace este PR y qué problema resuelve.
+Si está relacionado con un issue, inclúyelo aquí: e.g. "Closes #123".
+-->
 
-# Tipo de Cambio
+# Tipo de Cambio ⚡
 
--   [ ] 🐛 Bug fix (corrección de error no disruptiva)
--   [ ] ✨ New feature (nueva funcionalidad no disruptiva)
--   [ ] 💥 Breaking change (arreglo o funcionalidad que rompe compatibilidad)
--   [ ] 📝 Documentación
+- [ ] 🐛 Bug fix (Corrección de error no disruptiva)
+- [ ] ✨ New feature (Nueva funcionalidad no disruptiva)
+- [ ] 💥 Breaking change (Cambio que rompe compatibilidad)
+- [ ] 📝 Documentación / Docs
 
-# ¿Cómo se ha probado?
+# Issue Relacionado 🔗
 
-<!-- Describe las pruebas realizadas para verificar tus cambios -->
+<!--
+Si este PR está relacionado con un issue, referencia el número.
+-->
 
--   [ ] Pruebas Unitarias
--   [ ] Pruebas Manuales (Local)
+# Checklist de Calidad 🛡️
 
-# Checklist:
+- [ ] Mi código sigue el estilo y convenciones del proyecto.
+- [ ] He realizado una auto-revisión de mi código.
+- [ ] No se generan nuevas advertencias ni errores en la consola.
+- [ ] He añadido pruebas que demuestran que mis cambios funcionan.
+- [ ] Documentación actualizada si aplica.
+- [ ] Se actualizaron los tipos/contratos si aplica (TypeScript, OpenAPI, etc.).
 
--   [ ] Mi código sigue el estilo de este proyecto.
--   [ ] He realizado una auto-revisión de mi código.
--   [ ] Mis cambios no generan nuevas advertencias.
--   [ ] He añadido pruebas que demuestran que mi arreglo es efectivo o que mi funcionalidad funciona.
+# Notas Adicionales 🗒️
+
