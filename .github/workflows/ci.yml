@@ -2,29 +2,13 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "master"]
 
 jobs:
-  laravel-tests:
+  backend_quality:
+    name: Backend · Quality Gates
     runs-on: ubuntu-latest
-
-    services:
-      # Si necesitas una base de datos real para tests, descomenta esto.
-      # Por defecto usaremos SQLite en memoria para rapidez.
-      # mysql:
-      #   image: mysql:8.0
-      #   env:
-      #     MYSQL_ROOT_PASSWORD: password
-      #     MYSQL_DATABASE: laravel
-      #   ports:
-      #     - 3306:3306
-      #   options: >-
-      #     --health-cmd="mysqladmin ping"
-      #     --health-interval=10s
-      #     --health-timeout=5s
-      #     --health-retries=3
 
     steps:
       - uses: actions/checkout@v4
@@ -32,46 +16,101 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
-          coverage: none
+          php-version: "8.3"
+          extensions: mbstring, intl, pdo_pgsql
 
-      - name: Copy .env
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
-      - name: Install Composer Dependencies
-        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      - name: Install dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction
 
-      - name: Generate Key
-        run: php artisan key:generate
+      - name: Run Pint
+        run: ./vendor/bin/pint --test
 
-      - name: Directory Permissions
-        run: chmod -R 777 storage bootstrap/cache
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse
 
-      - name: Create Database
-        run: |
-          mkdir -p database
-          touch database/database.sqlite
-
-      - name: Execute Tests (Unit/Feature)
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
-        run: php artisan test
-
-  frontend-build:
+  backend_tests:
+    name: Backend · Tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: compras_ventas
+          POSTGRES_USER: compras_user
+          POSTGRES_PASSWORD: compras_pass
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U compras_user -d compras_ventas"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, intl, pdo_pgsql
+
+      - name: Install dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: compras_ventas
+          DB_USERNAME: compras_user
+          DB_PASSWORD: compras_pass
+        run: php artisan migrate --force
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: compras_ventas
+          DB_USERNAME: compras_user
+          DB_PASSWORD: compras_pass
+        run: php artisan test
+
+  frontend:
+    name: Frontend · Lint, Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build Assets
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build
         run: npm run build
